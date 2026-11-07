@@ -306,6 +306,30 @@ def test_bom_file_is_dropped_when_not_written(harness, tmp_path):
     assert harness["vdr"][0]["bom_file"] is None
 
 
+@pytest.mark.parametrize("reports_source", ["flag", "environment"])
+def test_relative_reports_dir_resolves_before_bom_generation(
+    harness, tmp_path, monkeypatch, reports_source
+):
+    """cdxgen runs in the source directory; its output path must not be relative."""
+    monkeypatch.chdir(tmp_path)
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    src = tmp_path / "src"
+    src.mkdir()
+    if reports_source == "environment":
+        monkeypatch.setenv("DEPSCAN_REPORTS_DIR", "reports")
+        argv = ["--src", str(src), "--no-banner", "-t", "rust"]
+    else:
+        monkeypatch.delenv("DEPSCAN_REPORTS_DIR", raising=False)
+        argv = ["--src", str(src), "--reports-dir", "reports", "--no-banner", "-t", "rust"]
+
+    cli.run_depscan(_args(argv))
+
+    bom_file, options = harness["create_bom"][0]
+    assert bom_file == str(reports / "sbom-rust.cdx.json")
+    assert options["reports_dir"] == str(reports)
+
+
 def test_bom_file_is_used_when_written(harness, tmp_path, monkeypatch):
     reports = tmp_path / "reports"
     reports.mkdir(exist_ok=True)

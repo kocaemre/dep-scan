@@ -610,7 +610,10 @@ def run_depscan(args):
     reports_dir = args.reports_dir
     # User has not provided an explicit reports_dir. Reuse the bom_dir
     if not reports_dir and args.bom_dir:
-        reports_dir = os.path.realpath(args.bom_dir)
+        reports_dir = args.bom_dir
+    if reports_dir:
+        # cdxgen runs from the source directory, not the caller's cwd.
+        reports_dir = os.path.realpath(reports_dir)
     # Are we running for a BOM directory the *user* supplied? This must be
     # captured before the lifecycle branch below repurposes the bom dir as an
     # output directory, otherwise the two modes become indistinguishable.
